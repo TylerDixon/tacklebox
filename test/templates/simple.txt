@@ -1,7 +1,0 @@
-Test template for great good:
-{% render(TestRender) %}
-test break1
-{% if(TestIf): "Super" ? "NotSuper" %}
-test break2
-{% switch(TestSwitch): case("NotThis"): "NotGreat", case("IsThis"): "Bodacious" %}
-test break3

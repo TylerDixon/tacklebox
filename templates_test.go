@@ -15,13 +15,41 @@ func TestBootstrap(t *testing.T) {
 		{
 			template: Template{
 				Name: "Test",
-				Location: "test/templates/simple.txt",
+				Location: "test/templates/ifrender.txt",
 			},
-			rendered: "test/templates/simple_out.txt",
+			rendered: "test/templates/ifrender_out.txt",
+			values: map[string]interface{}{
+				"TestIf": true,
+			},
+		},
+		{
+			template: Template{
+				Name: "Test",
+				Location: "test/templates/literalrender.txt",
+			},
+			rendered: "test/templates/literalrender_string_out.txt",
 			values: map[string]interface{}{
 				"TestRender": "Rad",
-				"TestIf": true,
-				"TestSwitch": "IsThis",
+			},
+		},
+		{
+			template: Template{
+				Name: "Test",
+				Location: "test/templates/literalrender.txt",
+			},
+			rendered: "test/templates/literalrender_number_out.txt",
+			values: map[string]interface{}{
+				"TestRender": 42.3,
+			},
+		},
+		{
+			template: Template{
+				Name: "Test",
+				Location: "test/templates/literalrender.txt",
+			},
+			rendered: "test/templates/literalrender_boolean_out.txt",
+			values: map[string]interface{}{
+				"TestRender": true,
 			},
 		},
 	}

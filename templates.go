@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"strconv"
+	"errors"
 )
 
 type RenderMap struct {
@@ -19,8 +20,9 @@ type Template struct {
 	Location string
 }
 
-var templateEncapsulationRegexp = regexp.MustCompile(`{%[\sa-zA-Z\(\):?",]*%}`)
-var directiveVariableMatcher = regexp.MustCompile(`(if|switch|render)\(([a-zA-Z-_]+)\)`)
+var allowedVariableCharacters = `[a-zA-Z-_0-9]+`
+var templateEncapsulationRegexp = regexp.MustCompile(`{%[\sa-zA-Z()\\:?",]*%}`)
+var directiveVariableMatcher = regexp.MustCompile(`(if|switch|render)\((` + allowedVariableCharacters + `)\)`)
 
 // Render takes in a map of settings, and with the read in template from the Location property, renders
 // the template with the available directives (if, switch, render), returning a final byte array of the
@@ -42,7 +44,6 @@ func (template *Template) Render(settings map[string]interface{}) ([]byte, error
 		return nil, replacementMapError
 	}
 	var renderedTemplateToJoin []string
-	fmt.Println(replacementMap)
 	for n, replacement := range replacementMap {
 		var segmentBefore string
 		if n == 0 {
@@ -54,11 +55,10 @@ func (template *Template) Render(settings map[string]interface{}) ([]byte, error
 
 		renderedTemplateToJoin = append(renderedTemplateToJoin, replacement)
 
-		if n == len(replacementMap)-1 {
+		if n == len(replacementMap) - 1 {
 			segmentAfter := parsedTemplate[directives[n][1]:]
 			renderedTemplateToJoin = append(renderedTemplateToJoin, segmentAfter)
 		}
-		fmt.Println(renderedTemplateToJoin)
 	}
 	return []byte(strings.Join(renderedTemplateToJoin, "")), nil
 }
@@ -74,11 +74,17 @@ func GetReplacementMap(parsedTemplate string, encapsulationPairs [][]int, settin
 			directiveAndVariable := directiveVariableMatcher.FindStringSubmatch(templatePortion)
 			directive := directiveAndVariable[1]
 			variable := settings[directiveAndVariable[2]]
+			var renderedString string
+			var renderError error
 			switch directive {
-			case `if`: renderedTemplates = append(renderedTemplates, RenderIf(variable, templatePortion)); break
-			case `switch`: renderedTemplates = append(renderedTemplates, RenderSwitch(variable, templatePortion)); break
-			case `render`: renderedTemplates = append(renderedTemplates, RenderLiteralRender(variable, templatePortion)); break
+			case `if`: renderedString, renderError = RenderIf(variable, templatePortion); break;
+			case `switch`: renderedString, renderError = RenderSwitch(variable, templatePortion); break;
+			case `render`: renderedString, renderError = RenderLiteralRender(variable, templatePortion); break;
 			}
+			if renderError != nil {
+				return nil, renderError
+			}
+			renderedTemplates = append(renderedTemplates, renderedString)
 		} else {
 			error := fmt.Errorf("No directive matched for the string %s", templatePortion)
 			fmt.Println(error)
@@ -88,25 +94,45 @@ func GetReplacementMap(parsedTemplate string, encapsulationPairs [][]int, settin
 	return renderedTemplates, nil
 }
 
-// RenderLiteralRender takes in an empty interface, and if it's a string, boolean, or integer, return it's stringified
+// RenderLiteralRender takes in an empty interface, and if it's a string, boolean, or float64, return it's stringified
 // value.
-func RenderLiteralRender(value interface{}, template string) string {
+func RenderLiteralRender(value interface{}, template string) (string, error) {
 	if str, ok := value.(string); ok {
-		return str
+		return str, nil
 	} else if boolean, ok := value.(bool); ok {
-		return strconv.FormatBool(boolean)
+		return strconv.FormatBool(boolean), nil
 
-	} else if integer, ok := value.(int64); ok {
-		return strconv.FormatInt(integer, 10)
+	} else if float, ok := value.(float64); ok {
+		return strconv.FormatFloat(float, 'f', -1, 64), nil
 	}
-	//TODO: implement error returning?
-	return "???"
+	renderError := errors.New("Literal render() variable must be one of type: string, bool, float64")
+	fmt.Println(renderError)
+	return "", renderError
 }
 
-//TODO: Implement switch and if rendering
-func RenderSwitch(value interface{}, template string) string {
-	return RenderLiteralRender(value, template)
+// Render if takes a boolean value, and given a directive such as "IfTrue" ? "IfFalse"
+// "IfTrue" would be rendered if the value was true, "IfFalse" were it false.
+func RenderIf(value interface{}, template string) (string, error) {
+	if boolean, ok := value.(bool); ok {
+		caseMatching := regexp.MustCompile(`"((?:[^"]|(?:\\"))*)"\s*\?\s*"((?:[^"]|(?:\\"))*)*"`)
+		trueAndFalse := caseMatching.FindStringSubmatch(template)
+		if boolean {
+			return trueAndFalse[1], nil
+		} else {
+			return trueAndFalse[2], nil
+		}
+	} else {
+		renderError := errors.New("if() variable must be of type bool")
+		return "", renderError
+	}
 }
-func RenderIf(value interface{}, template string) string {
+
+//TODO: Implement switch rendering
+func RenderSwitch(value interface{}, template string) (string, error) {
+	//const allowedCaseString = `[^)]*`
+	//caseMatching := regexp.MustCompile(`{%
+	//\s*switch(` + allowedVariableCharacters + `)\s*
+	//(case\("?` + allowedCaseString + `"?\):
+	//}`)
 	return RenderLiteralRender(value, template)
 }

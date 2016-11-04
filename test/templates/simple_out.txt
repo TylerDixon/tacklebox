@@ -1,7 +1,0 @@
-Test template for great good:
-Rad
-test break1
-Super
-test break2
-Bodacious
-test break3
