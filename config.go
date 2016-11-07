@@ -23,24 +23,28 @@ type ProjectConfig struct {
 
 type TemplateSetting struct {
 	Name     string                 // Name identifier of the template to render
-	Location string                 // Location in the project the template should be stored TODO: Should be relative to ProjectConfig.Location
+	Location string                 // Location in the project the template should be stored
 	Settings map[string]interface{} // Settings to render the template with
 }
 
 // Sync the all files declared in configuration
-func (configData ConfigData) sync() error {
+func (configData ConfigData) Sync() error {
 	filesToSync := make(map[string][]byte)
 	for _, project := range configData.Projects {
 		for _, templateSetting := range project.TemplateSettings {
 			templateToRender, getTemplateError := getTemplateByName(configData.Templates, templateSetting.Name)
 			if getTemplateError != nil {
-				return fmt.Errorf("Failed to find tepmlate for project %s due to error %s", project.Name, getTemplateError)
+				err := fmt.Errorf("Failed to find tepmlate for project %s due to error %s", project.Name, getTemplateError)
+				fmt.Println(err)
+				return err
 			}
 			renderedTemplate, renderErr := templateToRender.Render(templateSetting.Settings)
 			if renderErr != nil {
-				return fmt.Errorf("Failed to sync files due to render error %s", renderErr)
+				err := fmt.Errorf("Failed to sync files due to render error %s", renderErr)
+				fmt.Println(err)
+				return err
 			}
-			filesToSync[templateSetting.Location] = renderedTemplate
+			filesToSync[path.Join(project.Location, templateSetting.Location)] = renderedTemplate
 		}
 	}
 	for writeLocation, fileData := range filesToSync {
@@ -56,9 +60,29 @@ func (configData ConfigData) sync() error {
 	return nil
 }
 
+func (configData *ConfigData) ConfigDirs(dirToRead string) error {
+	fileInfo, readDirErr := ioutil.ReadDir(dirToRead)
+	if readDirErr != nil {
+		err := fmt.Errorf("Failed to ReadDir %s due to error %s", dirToRead, readDirErr)
+		fmt.Println(err)
+		return err
+	}
+	for _, file := range fileInfo {
+		if file.IsDir() {
+			configData.Projects = append(configData.Projects, ProjectConfig{
+				Name:             file.Name(),
+				Location:         path.Join(dirToRead, file.Name()),
+				TemplateSettings: []TemplateSetting{},
+			})
+		}
+	}
+	return nil
+}
+
 // Retrieve config returns a parsed config data from the tacklebox config directory in the home directory.
 func RetrieveConfig() (ConfigData, error) {
 	var unmarshaledConfigData ConfigData
+	//TODO: Handle homedir errors
 	homeDirectory, _ := homedir.Dir()
 	mkDirErr := os.Mkdir(path.Join(homeDirectory, ".tacklebox"), 0777)
 	if !os.IsExist(mkDirErr) {
@@ -86,6 +110,27 @@ func RetrieveConfig() (ConfigData, error) {
 		return unmarshaledConfigData, unmarshalConfigError
 	}
 	return unmarshaledConfigData, nil
+}
+
+// Write config data to config file
+func (configData ConfigData) Save() error {
+	//TODO: Handle homedir errors
+	homeDirectory, _ := homedir.Dir()
+	configFilePath := path.Join(homeDirectory, ".tacklebox", "config.json")
+	marshalledConfigData, marshalErr := json.MarshalIndent(configData, "", "    ")
+	if marshalErr != nil {
+		err := fmt.Errorf("Failed to marshal config data due to error %s", marshalErr)
+		fmt.Print(err)
+		return err
+	}
+	writeFileErr := ioutil.WriteFile(configFilePath, marshalledConfigData, 0666)
+	if writeFileErr != nil {
+		err := fmt.Errorf("Failed to write config data due to error %s", writeFileErr)
+		fmt.Println(err)
+		return err
+	}
+	fmt.Printf("Wrote config to file %s\n", configFilePath)
+	return nil
 }
 
 // InitializeConfigFile creates a default configuration file for use by tacklebox.
