@@ -1,12 +1,12 @@
 package main
 
 import (
-	"io/ioutil"
-	"fmt"
-	"regexp"
-	"strings"
-	"strconv"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 type RenderMap struct {
@@ -23,6 +23,17 @@ type Template struct {
 var allowedVariableCharacters = `[a-zA-Z-_0-9]+`
 var templateEncapsulationRegexp = regexp.MustCompile(`{%[\sa-zA-Z()\\:?",]*%}`)
 var directiveVariableMatcher = regexp.MustCompile(`(if|switch|render)\((` + allowedVariableCharacters + `)\)`)
+
+// Retrieves a template by name given a list of templates
+func getTemplateByName(templates []Template, name string) (Template, error) {
+	for _, template := range templates {
+		if template.Name == name {
+			return template, nil
+		}
+	}
+	return Template{}, fmt.Errorf("Couldn't find template with name %s", name)
+
+}
 
 // Render takes in a map of settings, and with the read in template from the Location property, renders
 // the template with the available directives (if, switch, render), returning a final byte array of the
@@ -49,13 +60,13 @@ func (template *Template) Render(settings map[string]interface{}) ([]byte, error
 		if n == 0 {
 			segmentBefore = parsedTemplate[:directives[n][0]]
 		} else if n > 0 && n < len(replacementMap) {
-			segmentBefore = parsedTemplate[directives[n - 1][1]:directives[n][0]]
+			segmentBefore = parsedTemplate[directives[n-1][1]:directives[n][0]]
 		}
 		renderedTemplateToJoin = append(renderedTemplateToJoin, segmentBefore)
 
 		renderedTemplateToJoin = append(renderedTemplateToJoin, replacement)
 
-		if n == len(replacementMap) - 1 {
+		if n == len(replacementMap)-1 {
 			segmentAfter := parsedTemplate[directives[n][1]:]
 			renderedTemplateToJoin = append(renderedTemplateToJoin, segmentAfter)
 		}
@@ -77,9 +88,15 @@ func GetReplacementMap(parsedTemplate string, encapsulationPairs [][]int, settin
 			var renderedString string
 			var renderError error
 			switch directive {
-			case `if`: renderedString, renderError = RenderIf(variable, templatePortion); break;
-			case `switch`: renderedString, renderError = RenderSwitch(variable, templatePortion); break;
-			case `render`: renderedString, renderError = RenderLiteralRender(variable, templatePortion); break;
+			case `if`:
+				renderedString, renderError = RenderIf(variable, templatePortion)
+				break
+			case `switch`:
+				renderedString, renderError = RenderSwitch(variable, templatePortion)
+				break
+			case `render`:
+				renderedString, renderError = RenderLiteralRender(variable, templatePortion)
+				break
 			}
 			if renderError != nil {
 				return nil, renderError

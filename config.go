@@ -1,29 +1,59 @@
 package main
 
 import (
-	"os"
-	"log"
-	"github.com/mitchellh/go-homedir"
-	"path"
-	"fmt"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"github.com/mitchellh/go-homedir"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
 )
 
 type ConfigData struct {
-	Projects []ProjectConfig
-	Templates []Template
+	Projects  []ProjectConfig // Collection of projects
+	Templates []Template      // Templates that can be configured for projects
 }
 
 type ProjectConfig struct {
-	Name string
-	Location string
-	TemplateSettings []TemplateSetting
+	Name             string            // Unique name of the project
+	Location         string            // Location of the root of the project
+	TemplateSettings []TemplateSetting // Collection of templates to render for the project and their settings
 }
 
 type TemplateSetting struct {
-	Name string
-	Settings map[string]interface{}
+	Name     string                 // Name identifier of the template to render
+	Location string                 // Location in the project the template should be stored TODO: Should be relative to ProjectConfig.Location
+	Settings map[string]interface{} // Settings to render the template with
+}
+
+// Sync the all files declared in configuration
+func (configData ConfigData) sync() error {
+	filesToSync := make(map[string][]byte)
+	for _, project := range configData.Projects {
+		for _, templateSetting := range project.TemplateSettings {
+			templateToRender, getTemplateError := getTemplateByName(configData.Templates, templateSetting.Name)
+			if getTemplateError != nil {
+				return fmt.Errorf("Failed to find tepmlate for project %s due to error %s", project.Name, getTemplateError)
+			}
+			renderedTemplate, renderErr := templateToRender.Render(templateSetting.Settings)
+			if renderErr != nil {
+				return fmt.Errorf("Failed to sync files due to render error %s", renderErr)
+			}
+			filesToSync[templateSetting.Location] = renderedTemplate
+		}
+	}
+	for writeLocation, fileData := range filesToSync {
+		writeRenderedFileError := ioutil.WriteFile(writeLocation, fileData, 0666)
+		if writeRenderedFileError != nil {
+			err := fmt.Errorf("Failed to write to file %s due to error %s", writeLocation, writeRenderedFileError)
+			fmt.Println(err)
+			return err
+		} else {
+			fmt.Printf("Synced file at %s\n", writeLocation)
+		}
+	}
+	return nil
 }
 
 // Retrieve config returns a parsed config data from the tacklebox config directory in the home directory.
@@ -46,7 +76,7 @@ func RetrieveConfig() (ConfigData, error) {
 		encodedConfigData, fileCreationOrReadError = InitializeConfigFile(configFilePath)
 	}
 	if fileCreationOrReadError != nil {
-		return unmarshaledConfigData, fileCreationOrReadError;
+		return unmarshaledConfigData, fileCreationOrReadError
 	}
 
 	unmarshalConfigError := json.Unmarshal(encodedConfigData, &unmarshaledConfigData)

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"testing"
-	"io/ioutil"
 	"bytes"
+	"io/ioutil"
+	"testing"
 )
 
-func TestBootstrap(t *testing.T) {
+func TestRender(t *testing.T) {
 	var cases = []struct {
 		template Template
 		values   map[string]interface{}
@@ -14,7 +14,7 @@ func TestBootstrap(t *testing.T) {
 	}{
 		{
 			template: Template{
-				Name: "Test",
+				Name:     "Test",
 				Location: "test/templates/ifrender.txt",
 			},
 			rendered: "test/templates/ifrender_out.txt",
@@ -24,7 +24,7 @@ func TestBootstrap(t *testing.T) {
 		},
 		{
 			template: Template{
-				Name: "Test",
+				Name:     "Test",
 				Location: "test/templates/literalrender.txt",
 			},
 			rendered: "test/templates/literalrender_string_out.txt",
@@ -34,7 +34,7 @@ func TestBootstrap(t *testing.T) {
 		},
 		{
 			template: Template{
-				Name: "Test",
+				Name:     "Test",
 				Location: "test/templates/literalrender.txt",
 			},
 			rendered: "test/templates/literalrender_number_out.txt",
@@ -44,7 +44,7 @@ func TestBootstrap(t *testing.T) {
 		},
 		{
 			template: Template{
-				Name: "Test",
+				Name:     "Test",
 				Location: "test/templates/literalrender.txt",
 			},
 			rendered: "test/templates/literalrender_boolean_out.txt",
