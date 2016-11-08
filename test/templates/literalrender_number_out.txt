@@ -1,0 +1,2 @@
+Test template for great good:
+42.3
