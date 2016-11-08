@@ -11,11 +11,13 @@ import (
 )
 
 type ConfigData struct {
-	Projects  []ProjectConfig // Collection of projects
-	Templates []Template      // Templates that can be configured for projects
+	GlobalTemplates map[string]TemplateSetting // Map of string IDs to template settings for global use
+	Projects        []ProjectConfig            // Collection of projects
+	Templates       []Template                 // Templates that can be configured for projects
 }
 
 type ProjectConfig struct {
+	Globals          []string          // List of globals for this project
 	Name             string            // Unique name of the project
 	Location         string            // Location of the root of the project
 	TemplateSettings []TemplateSetting // Collection of templates to render for the project and their settings
@@ -31,13 +33,15 @@ type TemplateSetting struct {
 func (configData ConfigData) Sync() error {
 	filesToSync := make(map[string][]byte)
 	for _, project := range configData.Projects {
+		// Render all templates configured for the template
 		for _, templateSetting := range project.TemplateSettings {
 			templateToRender, getTemplateError := getTemplateByName(configData.Templates, templateSetting.Name)
 			if getTemplateError != nil {
-				err := fmt.Errorf("Failed to find tepmlate for project %s due to error %s", project.Name, getTemplateError)
+				err := fmt.Errorf("Failed to find template for project %s due to error %s", project.Name, getTemplateError)
 				fmt.Println(err)
 				return err
 			}
+
 			renderedTemplate, renderErr := templateToRender.Render(templateSetting.Settings)
 			if renderErr != nil {
 				err := fmt.Errorf("Failed to sync files due to render error %s", renderErr)
@@ -45,6 +49,31 @@ func (configData ConfigData) Sync() error {
 				return err
 			}
 			filesToSync[path.Join(project.Location, templateSetting.Location)] = renderedTemplate
+		}
+
+		// Render all global templates specified for the project
+		for _, global := range project.Globals {
+			if globalConfig, ok := configData.GlobalTemplates[global]; ok {
+				templateToRender, getTemplateError := getTemplateByName(configData.Templates, globalConfig.Name)
+				if getTemplateError != nil {
+					err := fmt.Errorf("Failed to find template for global %s due to error %s", globalConfig.Name, getTemplateError)
+					fmt.Println(err)
+					return err
+				}
+
+				renderedTemplate, renderErr := templateToRender.Render(globalConfig.Settings)
+				if renderErr != nil {
+					err := fmt.Errorf("Failed to sync files due to render error %s", renderErr)
+					fmt.Println(err)
+					return err
+				}
+				filesToSync[path.Join(project.Location, globalConfig.Location)] = renderedTemplate
+
+			} else {
+				err := fmt.Errorf("Project %s configured with global %s, but no such global exists.", project.Name, global)
+				fmt.Println(err)
+				return err
+			}
 		}
 	}
 	for writeLocation, fileData := range filesToSync {
@@ -60,6 +89,9 @@ func (configData ConfigData) Sync() error {
 	return nil
 }
 
+// ConfigDirs takes in a directory to read, and for each directory in it, adds a project entry to config
+// TODO: Add interactive checkbox selection for adding dirs.
+// TODO: Check if dir already exists in config.
 func (configData *ConfigData) ConfigDirs(dirToRead string) error {
 	fileInfo, readDirErr := ioutil.ReadDir(dirToRead)
 	if readDirErr != nil {
