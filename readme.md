@@ -54,3 +54,69 @@ and would copy the the `/Users/home/.tacklebox/templates/.vscode` file to `/Proj
 ###ReadDir
 Usage: `tacklebox readdir <DirToRead>` or `tacklebox r <DirToRead>`
 Given a `DirToRead`, adds all directories inside `DirToRead` to the config file as a empty project by the name of the directory.
+
+##Sample use
+1. Go to your directory of projects.
+2. run `tacklebox r .`
+3. A file as follows will be generated as `$HOME/.tacklebox/config.json`:
+
+    ```
+    {
+        "GlobalTemplates": null,
+        "Projects": [
+            {
+                "Globals": null,
+                "Name": "ProjectOne",
+                "Location": "/Projects/testing/ProjectOne",
+                "TemplateSettings": []
+            }
+        ],
+        "Templates": []
+    }
+    ```
+    
+4. Inside the `$HOME/.tacklebox` directory, add a new folder `templates`, and a file inside that `someeditorconfig.json` with the contents:
+
+    ```
+    {
+        "someValue": "{% render(someValue) %}"
+    }
+    ```
+
+5. Update the config file to be:
+
+    ```
+    {
+        "GlobalTemplates": null,
+        "Projects": [
+            {
+                "Globals": null,
+                "Name": "ProjectOne",
+                "Location": "/Projects/testing/ProjectOne",
+                "TemplateSettings": [
+                    {
+                        "Name": "SomeEditorConfig", // Name of the template to configure
+                        "Location": "SomeEditorConfig.json", // Location relative to the project to copy the file to
+                        "Settings": { // Settings for the template
+                            "someValue": "Value To Render"
+                        }
+                    }
+                ]
+            }
+        ],
+        "Templates": [
+            {
+                "Name": "SomeEditorConfig",
+                "Location": "/Users/home/.tacklebox/templates/someeditorconfig.json"
+            }
+        ]
+    }
+    ```
+
+6. Run `tacklebox s`, and you should see the added file `/Projects/testing/ProjectOne/SomeEditorConfig.json` with the contents:
+
+    ```
+    {
+        "someValue": "Value To Render"
+    }
+    ```
