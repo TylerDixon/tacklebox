@@ -11,7 +11,7 @@ import (
 )
 
 type ConfigData struct {
-	GlobalTemplates map[string]TemplateSetting // Map of string IDs to template settings for global use
+	GlobalTemplates map[string]TemplateSetting // Map of string IDs to templateToRender settings for global use
 	Projects        []ProjectConfig            // Collection of projects
 	Templates       []Template                 // Templates that can be configured for projects
 }
@@ -24,20 +24,20 @@ type ProjectConfig struct {
 }
 
 type TemplateSetting struct {
-	Name     string                 // Name identifier of the template to render
-	Location string                 // Location in the project the template should be stored
-	Settings map[string]interface{} // Settings to render the template with
+	Name     string                 // Name identifier of the templateToRender to render
+	Location string                 // Location in the project the templateToRender should be stored
+	Settings map[string]interface{} // Settings to render the templateToRender with
 }
 
 // Sync the all files declared in configuration
 func (configData ConfigData) Sync() error {
 	filesToSync := make(map[string][]byte)
 	for _, project := range configData.Projects {
-		// Render all templates configured for the template
+		// Render all templates configured for the templateToRender
 		for _, templateSetting := range project.TemplateSettings {
 			templateToRender, getTemplateError := getTemplateByName(configData.Templates, templateSetting.Name)
 			if getTemplateError != nil {
-				err := fmt.Errorf("Failed to find template for project %s due to error %s", project.Name, getTemplateError)
+				err := fmt.Errorf("Failed to find templateToRender for project %s due to error %s", project.Name, getTemplateError)
 				fmt.Println(err)
 				return err
 			}
@@ -56,7 +56,7 @@ func (configData ConfigData) Sync() error {
 			if globalConfig, ok := configData.GlobalTemplates[global]; ok {
 				templateToRender, getTemplateError := getTemplateByName(configData.Templates, globalConfig.Name)
 				if getTemplateError != nil {
-					err := fmt.Errorf("Failed to find template for global %s due to error %s", globalConfig.Name, getTemplateError)
+					err := fmt.Errorf("Failed to find templateToRender for global %s due to error %s", globalConfig.Name, getTemplateError)
 					fmt.Println(err)
 					return err
 				}

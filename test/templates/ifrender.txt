@@ -1,2 +1,2 @@
 Test template for great good:
-{% if(TestIf): "Sup\"er" ? "NotSuper" %}
+{{if .TestIf -}} Super {{- else -}} NotSuper {{- end}}

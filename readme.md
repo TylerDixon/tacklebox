@@ -49,7 +49,8 @@ A sample config, with explanations is as follows:
 Usage: `tacklebox sync` or `tacklebox s`
 Using the current configuration file, copies all files configured to projects. Given the [above configuration file](#config),
 the sync command would copy the `/Users/home/.tacklebox/templates/pre-commit` file to `/Projects/testing/.git/hooks/pre-commit`,
-and would copy the the `/Users/home/.tacklebox/templates/.vscode` file to `/Projects/testing/.vscode`
+and would copy the the `/Users/home/.tacklebox/templates/.vscode` file to `/Projects/testing/.vscode`. For how the templates are
+rendered, see [the docs for the text/template package](https://golang.org/pkg/text/template/#hdr-Actions).
 
 ###ReadDir
 Usage: `tacklebox readdir <DirToRead>` or `tacklebox r <DirToRead>`
@@ -79,7 +80,7 @@ Given a `DirToRead`, adds all directories inside `DirToRead` to the config file 
 
     ```
     {
-        "someValue": "{% render(someValue) %}"
+        "someValue": "{{ .someValue }}"
     }
     ```
 
