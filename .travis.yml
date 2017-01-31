@@ -1,0 +1,26 @@
+language: go
+sudo: false
+go: 1.6
+script:
+- test -z "$(go fmt)"
+- go vet
+- go test -v -race
+- test -z "$(goimports -l .)"
+before_install:
+- go get golang.org/x/tools/cmd/goimports
+before_deploy:
+- go get github.com/mitchellh/gox
+- gox -os "linux darwin windows" -arch="386 amd64"
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: "P7nyfFokrqy2iAVjPCNWmhM2Rn1GypTLCuILp5KLO76jbk0j09WCXmHmglhHL2/Rohm9Gtn7v3o2BqyGinR0phxpEMEwKlXeNdi5Gzb+yK47yD7YTXFWeBZ46Wqfyrckd9xxk3sQSgUnZTQ8NRQYCIlFeCxrooSb14y+g/qqg0ioPxYHV6ppmAMCit7Y9wWovjp91HsSV2YP+WPv9h5P/8lMkVqNB5km3OEnDQ+qi0BG/BZeTqknATmEs8rSceVhN1h0astPnh2Nwvgvd25nQfBj9ykujEdJs3RSKRNsk+XcApKK8TFB0FL32wgfB5CYntgVmsSR8HtNa2IuR7FNMdwvsd9IIBL8FBGrqSZ/HIrtvu+aIcoI2uZNCnYaXcwsmTkpG2zmvZlkkZqIKS7VkS64LxMC+A1bjTv0uX2uAaEUY88OsS9D2iFeWySUVnO2n8RZdmiAmWMJkbp1NpytbTGSC6clnUvAZXyKA0jfzzwM7xyv3N/LJ/gRnuHG54O7Lh8vqx60TU02qEmYh/7A+6Y7vnbzJxzdqjm3YEVwvLiyzMi/cdcKpZaBnbqgwqzx9/jO0ZOIuSNzZLYtZ+yvHln73FprjiqVpBECIQBbA65s7KbWCpMBK2GuySOedOsBnA6wevxNMSPF8/O10Jv6wRrs/VUULrtxmo3pyibGhLs="
+  file:
+    - tacklebox_darwin_amd64
+    - tacklebox_linux_amd64
+    - tacklebox_windows_386.exe
+    - tacklebox_windows_amd64.exe
+  on:
+    tags: true
+    repo: TylerDixon/tacklebox
