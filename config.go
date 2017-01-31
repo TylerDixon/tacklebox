@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 type ConfigData struct {
