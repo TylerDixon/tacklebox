@@ -60,5 +60,4 @@ func main() {
 		},
 	}
 	app.Run(os.Args)
-	fmt.Printf("%s", configData)
 }

@@ -37,7 +37,7 @@ func (configData ConfigData) Sync() error {
 		for _, templateSetting := range project.TemplateSettings {
 			templateToRender, getTemplateError := getTemplateByName(configData.Templates, templateSetting.Name)
 			if getTemplateError != nil {
-				err := fmt.Errorf("Failed to find template for project %s due to error %s", project.Name, getTemplateError)
+				err := fmt.Errorf("Failed to find templateToRender for project %s due to error %s", project.Name, getTemplateError)
 				fmt.Println(err)
 				return err
 			}
@@ -56,7 +56,7 @@ func (configData ConfigData) Sync() error {
 			if globalConfig, ok := configData.GlobalTemplates[global]; ok {
 				templateToRender, getTemplateError := getTemplateByName(configData.Templates, globalConfig.Name)
 				if getTemplateError != nil {
-					err := fmt.Errorf("Failed to find template for global %s due to error %s", globalConfig.Name, getTemplateError)
+					err := fmt.Errorf("Failed to find templateToRender for global %s due to error %s", globalConfig.Name, getTemplateError)
 					fmt.Println(err)
 					return err
 				}
